@@ -14,6 +14,7 @@
       {
         "label": "main",
         "title": "Device Battery",
+        "visible": false,
         "width": 1200,
         "height": 820,
         "minWidth": 760,
@@ -21,14 +22,15 @@
       },
       {
         "label": "tray",
+        "title": "Device Battery Popup",
         "url": "/?tray=true",
         "visible": false,
         "transparent": true,
         "decorations": false,
         "alwaysOnTop": true,
         "skipTaskbar": true,
-        "width": 300,
-        "height": 400,
+        "width": 320,
+        "height": 450,
         "resizable": false,
         "focus": false
       }

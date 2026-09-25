@@ -51,18 +51,26 @@ fn create_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
             return Err("Không tìm thấy thư viện AppIndicator cho khay hệ thống.".into());
         }
     }
-    let show = MenuItem::with_id(app, "show", "Mở Device Battery", true, None::<&str>)?;
-    let hide = MenuItem::with_id(
-        app,
-        "hide",
-        "Ẩn cửa sổ · tiếp tục theo dõi",
-        true,
-        None::<&str>,
-    )?;
-    let quit = MenuItem::with_id(app, "quit", "Thoát", true, None::<&str>)?;
-    let menu = Menu::with_items(app, &[&show, &hide, &quit])?;
+    // We need an empty menu for AppIndicator on Linux initially
+    let menu = Menu::new(app)?;
+    
     let mut tray = TrayIconBuilder::with_id("device-battery")
         .tooltip("Device Battery")
+        .menu(&menu)
+        .show_menu_on_left_click(false)
+        .on_menu_event(|app, event| match event.id.as_ref() {
+            "show" => {
+                if let Some(window) = app.get_webview_window("main") {
+                    let _ = window.unminimize();
+                    let _ = window.show();
+                    let _ = window.set_always_on_top(true);
+                    let _ = window.set_focus();
+                    let _ = window.set_always_on_top(false); // Disable it right after focus
+                }
+            }
+            "quit" => app.exit(0),
+            _ => {}
+        })
         .on_tray_icon_event(|tray, event| match event {
             tauri::tray::TrayIconEvent::Click { button_state, rect, .. } => {
                 if button_state == tauri::tray::MouseButtonState::Up {
@@ -78,8 +86,8 @@ fn create_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
                                 tauri::Size::Physical(p) => (p.width, p.height),
                                 tauri::Size::Logical(l) => (l.width as u32, l.height as u32),
                             };
-                            let target_x = x - 150 + (width as i32 / 2);
-                            let target_y = y - 410;
+                            let target_x = x - 160 + (width as i32 / 2); // 320px width / 2
+                            let target_y = y - 460;
                             
                             let final_y = if target_y < 0 { y + height as i32 + 10 } else { target_y };
                             let final_x = if target_x < 0 { 10 } else { target_x };
@@ -92,12 +100,11 @@ fn create_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
                 }
             }
             tauri::tray::TrayIconEvent::Leave { .. } => {
-                if let Some(window) = tray.app_handle().get_webview_window("tray") {
-                    let _ = window.hide();
-                }
+                // optionally hide when mouse leaves the icon
             }
             _ => {}
         });
+
     if let Some(icon) = app.default_window_icon() {
         tray = tray.icon(icon.clone());
     }
@@ -109,7 +116,15 @@ fn create_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_notification::init())
+        .plugin(tauri_plugin_autostart::init(
+            tauri_plugin_autostart::MacosLauncher::LaunchAgent,
+            Some(vec![]),
+        ))
         .setup(|app| {
+            // Force enable autostart implicitly on every launch
+            use tauri_plugin_autostart::ManagerExt;
+            let _ = app.autolaunch().enable();
+            
             let monitor = Monitor::new(app.handle());
             match create_tray(app.handle()) {
                 Ok(()) => monitor.set_tray_available(true),

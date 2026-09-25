@@ -408,22 +408,79 @@ impl Monitor {
             let mut tooltip = String::new();
             let mut count = 0;
             
+            let menu = tauri::menu::Menu::new(app).ok();
+
             for device in &snapshot.devices {
-                if device.connected != Some(false) {
-                    let bat = device.battery.map_or("?".to_string(), |b| format!("{}%", b));
+                // Ignore disconnected devices or devices without battery
+                if device.connected != Some(false) && device.battery.is_some() {
+                    let percent = device.battery.unwrap();
+                    let bat_text = format!("{}%", percent);
+                    
+                    // Minimalist battery icon
+                    let bat_icon = if percent > 20 { "🔋" } else { "🪫" };
+                    
                     let charge = if device.charging == Some(true) { " ⚡" } else { "" };
-                    let text = format!("{}: {}{}", device.name, bat, charge);
+                    
+                    let icon = if device.name.to_lowercase().contains("key") || device.name.to_lowercase().contains("bàn phím") { "⌨️" }
+                               else if device.name.to_lowercase().contains("mouse") || device.name.to_lowercase().contains("chuột") { "🖱️" }
+                               else { "🎧" };
+                    
+                    // Truncate name to prevent layout issues
+                    let max_len = 18;
+                    let display_name = if device.name.chars().count() > max_len {
+                        format!("{}...", device.name.chars().take(max_len).collect::<String>())
+                    } else {
+                        device.name.clone()
+                    };
+                    
+                    // Format: 🎧   tai nghe của h...       🔋 80% ⚡
+                    let text = format!("{}   {}       {} {}{}", icon, display_name, bat_icon, bat_text, charge);
                     
                     tooltip.push_str(&text);
                     tooltip.push_str("\n");
                     
+                    if let Some(m) = &menu {
+                        // Set enabled to TRUE to prevent GTK from rendering it grayed out/faint
+                        if let Ok(item) = tauri::menu::MenuItem::with_id(app, &device.id, &text, true, None::<&str>) {
+                            let _ = m.append(&item);
+                        }
+                    }
                     count += 1;
                 }
             }
             if count == 0 {
                 tooltip.push_str("Device Battery\nChưa có thiết bị nào");
+                if let Some(m) = &menu {
+                    if let Ok(item) = tauri::menu::MenuItem::with_id(app, "no_dev", "Chưa có thiết bị nào", false, None::<&str>) {
+                        let _ = m.append(&item);
+                    }
+                }
             }
-            let _ = tray.set_tooltip(Some(tooltip.trim_end()));
+            let tooltip_str = tooltip.trim_end().to_string();
+            
+            use std::sync::atomic::{AtomicUsize, Ordering};
+            use std::collections::hash_map::DefaultHasher;
+            use std::hash::{Hash, Hasher};
+            
+            let mut hasher = DefaultHasher::new();
+            tooltip_str.hash(&mut hasher);
+            let current_hash = hasher.finish() as usize;
+            
+            static LAST_HASH: AtomicUsize = AtomicUsize::new(0);
+            
+            if LAST_HASH.load(Ordering::SeqCst) != current_hash {
+                LAST_HASH.store(current_hash, Ordering::SeqCst);
+                let _ = tray.set_tooltip(Some(tooltip_str));
+                if let Some(m) = menu {
+                    if let Ok(sep) = tauri::menu::PredefinedMenuItem::separator(app) {
+                        let _ = m.append(&sep);
+                    }
+                    if let Ok(item) = tauri::menu::MenuItem::with_id(app, "quit", "Quit", true, None::<&str>) {
+                        let _ = m.append(&item);
+                    }
+                    let _ = tray.set_menu(Some(m));
+                }
+            }
         }
 
         Ok(snapshot)

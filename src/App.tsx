@@ -1,3 +1,5 @@
+import { useState, useEffect } from "react";
+import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { useMonitor } from "./useMonitor";
 import { DeviceCard } from "./components/DeviceCard";
 import { SettingsPanel } from "./components/SettingsPanel";
@@ -5,8 +7,18 @@ import { TrayPopup } from "./components/TrayPopup";
 import "./App.css";
 
 function App() {
-  const urlParams = new URLSearchParams(window.location.search);
-  const isTray = urlParams.get("tray") === "true";
+  const [isTray, setIsTray] = useState(() => window.location.search.includes("tray=true"));
+
+  useEffect(() => {
+    try {
+      if (getCurrentWebviewWindow().label === "tray") {
+        setIsTray(true);
+        document.body.classList.add("tray-mode");
+      }
+    } catch (e) {
+      // ignore if not in tauri
+    }
+  }, []);
 
   if (isTray) {
     return <TrayPopup />;
