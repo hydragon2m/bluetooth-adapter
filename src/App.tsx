@@ -1,49 +1,115 @@
-import { useState } from "react";
-import reactLogo from "./assets/react.svg";
-import { invoke } from "@tauri-apps/api/core";
+import { useMonitor } from "./useMonitor";
+import { DeviceCard } from "./components/DeviceCard";
+import { SettingsPanel } from "./components/SettingsPanel";
 import "./App.css";
 
 function App() {
-  const [greetMsg, setGreetMsg] = useState("");
-  const [name, setName] = useState("");
+  const {
+    snapshot,
+    loading,
+    error,
+    mode,
+    refresh,
+    updateSettings,
+    enableDemo,
+    disableDemo,
+  } = useMonitor();
 
-  async function greet() {
-    // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-    setGreetMsg(await invoke("greet", { name }));
+  if (error && !snapshot) {
+    return (
+      <main className="container center">
+        <div className="error-card">
+          <h2>Error initializing monitor</h2>
+          <p>{error}</p>
+        </div>
+      </main>
+    );
   }
 
+  if (!snapshot) {
+    return (
+      <main className="container center">
+        <div className="loader"></div>
+        <p>Loading devices...</p>
+      </main>
+    );
+  }
+
+  const isDemo = mode === "demo";
+
   return (
-    <main className="container">
-      <h1>Welcome to Tauri + React</h1>
+    <main className={`container ${isDemo ? "demo-mode" : ""}`}>
+      <header className="header">
+        <div className="header-title">
+          <h1>Device Battery</h1>
+          {isDemo && <span className="demo-badge">Demo Mode</span>}
+        </div>
+        <div className="header-actions">
+          <button className="btn btn-secondary" onClick={refresh} disabled={loading}>
+            {loading ? "Refreshing..." : "Refresh"}
+          </button>
+          {mode !== "native" && (
+            <button
+              className="btn btn-outline"
+              onClick={isDemo ? disableDemo : enableDemo}
+            >
+              {isDemo ? "Exit Demo" : "View Demo"}
+            </button>
+          )}
+        </div>
+      </header>
 
-      <div className="row">
-        <a href="https://vite.dev" target="_blank">
-          <img src="/vite.svg" className="logo vite" alt="Vite logo" />
-        </a>
-        <a href="https://tauri.app" target="_blank">
-          <img src="/tauri.svg" className="logo tauri" alt="Tauri logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
+      {error && (
+        <div className="alert alert-error">
+          <p>{error}</p>
+        </div>
+      )}
+
+      {snapshot.notificationError && (
+        <div className="alert alert-warning">
+          <p>Notification Error: {snapshot.notificationError}</p>
+        </div>
+      )}
+
+      <div className="grid">
+        <section className="devices-section">
+          <h2>Connected Devices ({snapshot.devices.length})</h2>
+          {snapshot.devices.length === 0 ? (
+            <div className="empty-state">
+              <p>No devices found.</p>
+            </div>
+          ) : (
+            <div className="device-list">
+              {snapshot.devices.map((device) => (
+                <DeviceCard
+                  key={device.id}
+                  device={device}
+                  history={snapshot.history[device.id] || []}
+                />
+              ))}
+            </div>
+          )}
+        </section>
+
+        <section className="sidebar">
+          <SettingsPanel
+            settings={snapshot.settings}
+            onUpdate={updateSettings}
+          />
+          
+          <div className="providers-info">
+            <h3>Providers</h3>
+            <ul className="provider-list">
+              {snapshot.providers.map((p) => (
+                <li key={p.id} className={p.available ? "provider-active" : "provider-inactive"}>
+                  <strong>{p.name}</strong>
+                  <p>{p.message}</p>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
       </div>
-      <p>Click on the Tauri, Vite, and React logos to learn more.</p>
-
-      <form
-        className="row"
-        onSubmit={(e) => {
-          e.preventDefault();
-          greet();
-        }}
-      >
-        <input
-          id="greet-input"
-          onChange={(e) => setName(e.currentTarget.value)}
-          placeholder="Enter a name..."
-        />
-        <button type="submit">Greet</button>
-      </form>
-      <p>{greetMsg}</p>
     </main>
   );
 }
