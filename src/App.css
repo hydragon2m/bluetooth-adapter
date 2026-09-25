@@ -526,3 +526,121 @@ input[type="range"]::-webkit-slider-thumb:hover {
   border: 1px dashed var(--border-color);
   color: var(--text-muted);
 }
+
+/* Tray Popup Styles */
+.tray-popup {
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  padding: 12px;
+  color: var(--text-color);
+  width: 100vw;
+  height: 100vh;
+  box-sizing: border-box;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.tray-popup.center {
+  justify-content: center;
+  align-items: center;
+}
+.tray-header h4 {
+  margin: 0 0 10px 0;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 8px;
+}
+.tray-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.tray-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.tray-item-info {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.9rem;
+}
+.tray-battery-bar-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.tray-item-battery {
+  font-size: 0.85rem;
+  font-weight: 600;
+  min-width: 35px;
+}
+.tray-item-battery.danger {
+  color: var(--danger-color);
+}
+.tray-item-battery.unknown {
+  color: var(--text-muted);
+}
+.tray-battery-bar {
+  flex-grow: 1;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.tray-battery-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+.fill-success {
+  background: var(--success-color);
+}
+.fill-danger {
+  background: var(--danger-color);
+}
+.tray-empty {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  text-align: center;
+  margin-top: 20px;
+}
+
+.tray-footer {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+.tray-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-color);
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  transition: all 0.2s;
+}
+.tray-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+.tray-btn.danger:hover {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.3);
+  color: #fca5a5;
+}

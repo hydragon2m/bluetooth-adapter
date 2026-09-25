@@ -18,6 +18,19 @@
         "height": 820,
         "minWidth": 760,
         "minHeight": 600
+      },
+      {
+        "label": "tray",
+        "url": "/?tray=true",
+        "visible": false,
+        "transparent": true,
+        "decorations": false,
+        "alwaysOnTop": true,
+        "skipTaskbar": true,
+        "width": 300,
+        "height": 400,
+        "resizable": false,
+        "focus": false
       }
     ],
     "security": {

@@ -1,9 +1,17 @@
 import { useMonitor } from "./useMonitor";
 import { DeviceCard } from "./components/DeviceCard";
 import { SettingsPanel } from "./components/SettingsPanel";
+import { TrayPopup } from "./components/TrayPopup";
 import "./App.css";
 
 function App() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const isTray = urlParams.get("tray") === "true";
+
+  if (isTray) {
+    return <TrayPopup />;
+  }
+
   const {
     snapshot,
     loading,

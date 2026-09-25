@@ -63,22 +63,39 @@ fn create_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
     let menu = Menu::with_items(app, &[&show, &hide, &quit])?;
     let mut tray = TrayIconBuilder::with_id("device-battery")
         .tooltip("Device Battery")
-        .menu(&menu)
-        .show_menu_on_left_click(true)
-        .on_menu_event(|app, event| match event.id.as_ref() {
-            "show" => {
-                if let Some(window) = app.get_webview_window("main") {
-                    let _ = window.show();
-                    let _ = window.unminimize();
-                    let _ = window.set_focus();
+        .on_tray_icon_event(|tray, event| match event {
+            tauri::tray::TrayIconEvent::Click { button_state, rect, .. } => {
+                if button_state == tauri::tray::MouseButtonState::Up {
+                    if let Some(window) = tray.app_handle().get_webview_window("tray") {
+                        if window.is_visible().unwrap_or(false) {
+                            let _ = window.hide();
+                        } else {
+                            let (x, y) = match rect.position {
+                                tauri::Position::Physical(p) => (p.x, p.y),
+                                tauri::Position::Logical(l) => (l.x as i32, l.y as i32),
+                            };
+                            let (width, height) = match rect.size {
+                                tauri::Size::Physical(p) => (p.width, p.height),
+                                tauri::Size::Logical(l) => (l.width as u32, l.height as u32),
+                            };
+                            let target_x = x - 150 + (width as i32 / 2);
+                            let target_y = y - 410;
+                            
+                            let final_y = if target_y < 0 { y + height as i32 + 10 } else { target_y };
+                            let final_x = if target_x < 0 { 10 } else { target_x };
+                            
+                            let _ = window.set_position(tauri::Position::Physical(tauri::PhysicalPosition::new(final_x, final_y)));
+                            let _ = window.show();
+                            let _ = window.set_focus();
+                        }
+                    }
                 }
             }
-            "hide" => {
-                if let Some(window) = app.get_webview_window("main") {
+            tauri::tray::TrayIconEvent::Leave { .. } => {
+                if let Some(window) = tray.app_handle().get_webview_window("tray") {
                     let _ = window.hide();
                 }
             }
-            "quit" => app.exit(0),
             _ => {}
         });
     if let Some(icon) = app.default_window_icon() {
@@ -107,8 +124,24 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             get_snapshot,
             refresh_devices,
-            update_settings
+            update_settings,
+            open_main,
+            quit_app
         ])
         .run(tauri::generate_context!())
         .expect("error while running Device Battery");
+}
+
+#[tauri::command]
+fn open_main(app: tauri::AppHandle) {
+    if let Some(window) = app.get_webview_window("main") {
+        let _ = window.show();
+        let _ = window.unminimize();
+        let _ = window.set_focus();
+    }
+}
+
+#[tauri::command]
+fn quit_app(app: tauri::AppHandle) {
+    app.exit(0);
 }

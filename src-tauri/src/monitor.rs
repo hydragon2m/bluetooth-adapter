@@ -402,7 +402,31 @@ impl Monitor {
                 .map_err(|_| "Monitor state is unavailable.")?;
             (history_changed || previous_alerted != data.alerts.delivered).then(|| data.saved())
         };
-        self.persist_and_emit(app, saved)
+        let snapshot = self.persist_and_emit(app, saved)?;
+
+        if let Some(tray) = app.tray_by_id("device-battery") {
+            let mut tooltip = String::new();
+            let mut count = 0;
+            
+            for device in &snapshot.devices {
+                if device.connected != Some(false) {
+                    let bat = device.battery.map_or("?".to_string(), |b| format!("{}%", b));
+                    let charge = if device.charging == Some(true) { " ⚡" } else { "" };
+                    let text = format!("{}: {}{}", device.name, bat, charge);
+                    
+                    tooltip.push_str(&text);
+                    tooltip.push_str("\n");
+                    
+                    count += 1;
+                }
+            }
+            if count == 0 {
+                tooltip.push_str("Device Battery\nChưa có thiết bị nào");
+            }
+            let _ = tray.set_tooltip(Some(tooltip.trim_end()));
+        }
+
+        Ok(snapshot)
     }
 
     pub fn update_settings(
