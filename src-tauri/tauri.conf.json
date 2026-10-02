@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Device Battery",
+  "productName": "BlueBat",
   "version": "0.1.0",
-  "identifier": "com.hy.bluetooth-adapter",
+  "identifier": "com.hy.bluebat",
   "build": {
     "beforeDevCommand": "pnpm dev",
     "devUrl": "http://localhost:1420",
